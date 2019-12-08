@@ -84,8 +84,7 @@ VarType State::OperationType(const DXBCBytecode::OpcodeType &op) const
     case OPCODE_SYNC:
     case OPCODE_STORE_UAV_TYPED:
     case OPCODE_STORE_RAW:
-    case OPCODE_STORE_STRUCTURED:
-      return VarType::Float;
+    case OPCODE_STORE_STRUCTURED: return VarType::Float;
 
     // operations that can be either type, also just return float (fixed up later)
     case OPCODE_SAMPLE:
@@ -265,26 +264,22 @@ bool State::OperationFlushing(const DXBCBytecode::OpcodeType &op) const
     case OPCODE_LT:
     case OPCODE_GE:
     case OPCODE_EQ:
-    case OPCODE_NE:
-      return true;
+    case OPCODE_NE: return true;
 
     // can't generate denorms, or denorm inputs are implicitly rounded to 0, so don't bother
     // flushing
     case OPCODE_ITOF:
     case OPCODE_UTOF:
     case OPCODE_FTOI:
-    case OPCODE_FTOU:
-      return false;
+    case OPCODE_FTOU: return false;
 
     // we have to flush this manually since the input is halves encoded in uints
     case OPCODE_F16TOF32:
-    case OPCODE_F32TOF16:
-      return false;
+    case OPCODE_F32TOF16: return false;
 
     // implementation defined if this should flush or not, we choose not.
     case OPCODE_DTOF:
-    case OPCODE_FTOD:
-      return false;
+    case OPCODE_FTOD: return false;
 
     // any I/O or data movement operation that does not manipulate the data, such as using the
     // ld(22.4.6) instruction to access Resource data, or executing mov instruction or conditional
@@ -293,8 +288,7 @@ bool State::OperationFlushing(const DXBCBytecode::OpcodeType &op) const
     case OPCODE_MOV:
     case OPCODE_MOVC:
     case OPCODE_LD:
-    case OPCODE_LD_MS:
-      return false;
+    case OPCODE_LD_MS: return false;
 
     // sample operations flush denorms
     case OPCODE_SAMPLE:
@@ -306,8 +300,7 @@ bool State::OperationFlushing(const DXBCBytecode::OpcodeType &op) const
     case OPCODE_GATHER4:
     case OPCODE_GATHER4_C:
     case OPCODE_GATHER4_PO:
-    case OPCODE_GATHER4_PO_C:
-      return true;
+    case OPCODE_GATHER4_PO_C: return true;
 
     // unclear if these flush and it's unlikely denorms will come up, so conservatively flush
     case OPCODE_SAMPLE_INFO:
@@ -321,8 +314,7 @@ bool State::OperationFlushing(const DXBCBytecode::OpcodeType &op) const
     case OPCODE_DERIV_RTX_FINE:
     case OPCODE_DERIV_RTY:
     case OPCODE_DERIV_RTY_COARSE:
-    case OPCODE_DERIV_RTY_FINE:
-      return true;
+    case OPCODE_DERIV_RTY_FINE: return true;
 
     // operations that don't work on floats don't flush
     case OPCODE_RESINFO:
@@ -345,8 +337,7 @@ bool State::OperationFlushing(const DXBCBytecode::OpcodeType &op) const
     case OPCODE_SYNC:
     case OPCODE_STORE_UAV_TYPED:
     case OPCODE_STORE_RAW:
-    case OPCODE_STORE_STRUCTURED:
-      return false;
+    case OPCODE_STORE_STRUCTURED: return false;
 
     // integer operations don't flush
     case OPCODE_AND:
@@ -412,8 +403,7 @@ bool State::OperationFlushing(const DXBCBytecode::OpcodeType &op) const
     case OPCODE_LD_RAW:
     case OPCODE_LD_UAV_TYPED:
     case OPCODE_LD_STRUCTURED:
-    case OPCODE_DTOU:
-      return false;
+    case OPCODE_DTOU: return false;
 
     // doubles do not flush
     case OPCODE_DADD:
@@ -845,7 +835,9 @@ ShaderVariable abs(const ShaderVariable &v, const VarType type)
         r.value.iv[i] = v.value.iv[i] > 0 ? v.value.iv[i] : -v.value.iv[i];
       break;
     }
-    case VarType::UInt: { break;
+    case VarType::UInt:
+    {
+      break;
     }
     case VarType::Float:
     {
@@ -890,7 +882,9 @@ ShaderVariable neg(const ShaderVariable &v, const VarType type)
         r.value.iv[i] = -v.value.iv[i];
       break;
     }
-    case VarType::UInt: { break;
+    case VarType::UInt:
+    {
+      break;
     }
     case VarType::Float:
     {
@@ -1786,8 +1780,8 @@ State State::GetNext(GlobalState &global, DebugAPIWrapper *apiWrapper, State qua
 
   switch(op.operation)
   {
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Math operations
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      // Math operations
 
     case OPCODE_DADD:
     case OPCODE_IADD:
@@ -2042,33 +2036,37 @@ State State::GetNext(GlobalState &global, DebugAPIWrapper *apiWrapper, State qua
     }
     case OPCODE_FRC:
       s.SetDst(op.operands[0], op,
-               ShaderVariable("", srcOpers[0].value.f.x - floor(srcOpers[0].value.f.x),
-                              srcOpers[0].value.f.y - floor(srcOpers[0].value.f.y),
-                              srcOpers[0].value.f.z - floor(srcOpers[0].value.f.z),
-                              srcOpers[0].value.f.w - floor(srcOpers[0].value.f.w)));
+               ShaderVariable("", srcOpers[0].value.f.x - floorf(srcOpers[0].value.f.x),
+                              srcOpers[0].value.f.y - floorf(srcOpers[0].value.f.y),
+                              srcOpers[0].value.f.z - floorf(srcOpers[0].value.f.z),
+                              srcOpers[0].value.f.w - floorf(srcOpers[0].value.f.w)));
       break;
     // positive infinity
     case OPCODE_ROUND_PI:
       s.SetDst(op.operands[0], op,
-               ShaderVariable("", ceil(srcOpers[0].value.f.x), ceil(srcOpers[0].value.f.y),
-                              ceil(srcOpers[0].value.f.z), ceil(srcOpers[0].value.f.w)));
+               ShaderVariable("", ceilf(srcOpers[0].value.f.x), ceilf(srcOpers[0].value.f.y),
+                              ceilf(srcOpers[0].value.f.z), ceilf(srcOpers[0].value.f.w)));
       break;
     // negative infinity
     case OPCODE_ROUND_NI:
       s.SetDst(op.operands[0], op,
-               ShaderVariable("", floor(srcOpers[0].value.f.x), floor(srcOpers[0].value.f.y),
-                              floor(srcOpers[0].value.f.z), floor(srcOpers[0].value.f.w)));
+               ShaderVariable("", floorf(srcOpers[0].value.f.x), floorf(srcOpers[0].value.f.y),
+                              floorf(srcOpers[0].value.f.z), floorf(srcOpers[0].value.f.w)));
       break;
     // towards zero
     case OPCODE_ROUND_Z:
-      s.SetDst(
-          op.operands[0], op,
-          ShaderVariable(
-              "",
-              srcOpers[0].value.f.x < 0 ? ceil(srcOpers[0].value.f.x) : floor(srcOpers[0].value.f.x),
-              srcOpers[0].value.f.y < 0 ? ceil(srcOpers[0].value.f.y) : floor(srcOpers[0].value.f.y),
-              srcOpers[0].value.f.z < 0 ? ceil(srcOpers[0].value.f.z) : floor(srcOpers[0].value.f.z),
-              srcOpers[0].value.f.w < 0 ? ceil(srcOpers[0].value.f.w) : floor(srcOpers[0].value.f.w)));
+    {
+      s.SetDst(op.operands[0], op,
+               ShaderVariable("",
+                              srcOpers[0].value.f.x < 0.f ? ceilf(srcOpers[0].value.f.x)
+                                                          : floorf(srcOpers[0].value.f.x),
+                              srcOpers[0].value.f.y < 0.f ? ceilf(srcOpers[0].value.f.y)
+                                                          : floorf(srcOpers[0].value.f.y),
+                              srcOpers[0].value.f.z < 0.f ? ceilf(srcOpers[0].value.f.z)
+                                                          : floorf(srcOpers[0].value.f.z),
+                              srcOpers[0].value.f.w < 0.f ? ceilf(srcOpers[0].value.f.w)
+                                                          : floorf(srcOpers[0].value.f.w)));
+    }
       break;
     // to nearest even int (banker's rounding)
     case OPCODE_ROUND_NE:
@@ -2078,28 +2076,28 @@ State State::GetNext(GlobalState &global, DebugAPIWrapper *apiWrapper, State qua
       break;
     case OPCODE_INEG: s.SetDst(op.operands[0], op, neg(srcOpers[0], optype)); break;
     case OPCODE_IMIN:
-      s.SetDst(
-          op.operands[0], op,
-          ShaderVariable("", srcOpers[0].value.i.x < srcOpers[1].value.i.x ? srcOpers[0].value.i.x
-                                                                           : srcOpers[1].value.i.x,
-                         srcOpers[0].value.i.y < srcOpers[1].value.i.y ? srcOpers[0].value.i.y
-                                                                       : srcOpers[1].value.i.y,
-                         srcOpers[0].value.i.z < srcOpers[1].value.i.z ? srcOpers[0].value.i.z
-                                                                       : srcOpers[1].value.i.z,
-                         srcOpers[0].value.i.w < srcOpers[1].value.i.w ? srcOpers[0].value.i.w
-                                                                       : srcOpers[1].value.i.w));
+      s.SetDst(op.operands[0], op,
+               ShaderVariable("",
+                              srcOpers[0].value.i.x < srcOpers[1].value.i.x ? srcOpers[0].value.i.x
+                                                                            : srcOpers[1].value.i.x,
+                              srcOpers[0].value.i.y < srcOpers[1].value.i.y ? srcOpers[0].value.i.y
+                                                                            : srcOpers[1].value.i.y,
+                              srcOpers[0].value.i.z < srcOpers[1].value.i.z ? srcOpers[0].value.i.z
+                                                                            : srcOpers[1].value.i.z,
+                              srcOpers[0].value.i.w < srcOpers[1].value.i.w ? srcOpers[0].value.i.w
+                                                                            : srcOpers[1].value.i.w));
       break;
     case OPCODE_UMIN:
-      s.SetDst(
-          op.operands[0], op,
-          ShaderVariable("", srcOpers[0].value.u.x < srcOpers[1].value.u.x ? srcOpers[0].value.u.x
-                                                                           : srcOpers[1].value.u.x,
-                         srcOpers[0].value.u.y < srcOpers[1].value.u.y ? srcOpers[0].value.u.y
-                                                                       : srcOpers[1].value.u.y,
-                         srcOpers[0].value.u.z < srcOpers[1].value.u.z ? srcOpers[0].value.u.z
-                                                                       : srcOpers[1].value.u.z,
-                         srcOpers[0].value.u.w < srcOpers[1].value.u.w ? srcOpers[0].value.u.w
-                                                                       : srcOpers[1].value.u.w));
+      s.SetDst(op.operands[0], op,
+               ShaderVariable("",
+                              srcOpers[0].value.u.x < srcOpers[1].value.u.x ? srcOpers[0].value.u.x
+                                                                            : srcOpers[1].value.u.x,
+                              srcOpers[0].value.u.y < srcOpers[1].value.u.y ? srcOpers[0].value.u.y
+                                                                            : srcOpers[1].value.u.y,
+                              srcOpers[0].value.u.z < srcOpers[1].value.u.z ? srcOpers[0].value.u.z
+                                                                            : srcOpers[1].value.u.z,
+                              srcOpers[0].value.u.w < srcOpers[1].value.u.w ? srcOpers[0].value.u.w
+                                                                            : srcOpers[1].value.u.w));
       break;
     case OPCODE_DMIN:
     {
@@ -2127,8 +2125,9 @@ State State::GetNext(GlobalState &global, DebugAPIWrapper *apiWrapper, State qua
     case OPCODE_UMAX:
       s.SetDst(
           op.operands[0], op,
-          ShaderVariable("", srcOpers[0].value.u.x >= srcOpers[1].value.u.x ? srcOpers[0].value.u.x
-                                                                            : srcOpers[1].value.u.x,
+          ShaderVariable("",
+                         srcOpers[0].value.u.x >= srcOpers[1].value.u.x ? srcOpers[0].value.u.x
+                                                                        : srcOpers[1].value.u.x,
                          srcOpers[0].value.u.y >= srcOpers[1].value.u.y ? srcOpers[0].value.u.y
                                                                         : srcOpers[1].value.u.y,
                          srcOpers[0].value.u.z >= srcOpers[1].value.u.z ? srcOpers[0].value.u.z
@@ -2139,8 +2138,9 @@ State State::GetNext(GlobalState &global, DebugAPIWrapper *apiWrapper, State qua
     case OPCODE_IMAX:
       s.SetDst(
           op.operands[0], op,
-          ShaderVariable("", srcOpers[0].value.i.x >= srcOpers[1].value.i.x ? srcOpers[0].value.i.x
-                                                                            : srcOpers[1].value.i.x,
+          ShaderVariable("",
+                         srcOpers[0].value.i.x >= srcOpers[1].value.i.x ? srcOpers[0].value.i.x
+                                                                        : srcOpers[1].value.i.x,
                          srcOpers[0].value.i.y >= srcOpers[1].value.i.y ? srcOpers[0].value.i.y
                                                                         : srcOpers[1].value.i.y,
                          srcOpers[0].value.i.z >= srcOpers[1].value.i.z ? srcOpers[0].value.i.z
@@ -2282,7 +2282,9 @@ State State::GetNext(GlobalState &global, DebugAPIWrapper *apiWrapper, State qua
     case OPCODE_ISHL:
     {
       uint32_t shifts[] = {
-          srcOpers[1].value.u.x & 0x1f, srcOpers[1].value.u.y & 0x1f, srcOpers[1].value.u.z & 0x1f,
+          srcOpers[1].value.u.x & 0x1f,
+          srcOpers[1].value.u.y & 0x1f,
+          srcOpers[1].value.u.z & 0x1f,
           srcOpers[1].value.u.w & 0x1f,
       };
 
@@ -2301,7 +2303,9 @@ State State::GetNext(GlobalState &global, DebugAPIWrapper *apiWrapper, State qua
     case OPCODE_USHR:
     {
       uint32_t shifts[] = {
-          srcOpers[1].value.u.x & 0x1f, srcOpers[1].value.u.y & 0x1f, srcOpers[1].value.u.z & 0x1f,
+          srcOpers[1].value.u.x & 0x1f,
+          srcOpers[1].value.u.y & 0x1f,
+          srcOpers[1].value.u.z & 0x1f,
           srcOpers[1].value.u.w & 0x1f,
       };
 
@@ -2320,7 +2324,9 @@ State State::GetNext(GlobalState &global, DebugAPIWrapper *apiWrapper, State qua
     case OPCODE_ISHR:
     {
       uint32_t shifts[] = {
-          srcOpers[1].value.u.x & 0x1f, srcOpers[1].value.u.y & 0x1f, srcOpers[1].value.u.z & 0x1f,
+          srcOpers[1].value.u.x & 0x1f,
+          srcOpers[1].value.u.y & 0x1f,
+          srcOpers[1].value.u.z & 0x1f,
           srcOpers[1].value.u.w & 0x1f,
       };
 
@@ -2337,31 +2343,35 @@ State State::GetNext(GlobalState &global, DebugAPIWrapper *apiWrapper, State qua
       break;
     }
     case OPCODE_AND:
-      s.SetDst(op.operands[0], op, ShaderVariable("", srcOpers[0].value.i.x & srcOpers[1].value.i.x,
-                                                  srcOpers[0].value.i.y & srcOpers[1].value.i.y,
-                                                  srcOpers[0].value.i.z & srcOpers[1].value.i.z,
-                                                  srcOpers[0].value.i.w & srcOpers[1].value.i.w));
+      s.SetDst(op.operands[0], op,
+               ShaderVariable("", srcOpers[0].value.i.x & srcOpers[1].value.i.x,
+                              srcOpers[0].value.i.y & srcOpers[1].value.i.y,
+                              srcOpers[0].value.i.z & srcOpers[1].value.i.z,
+                              srcOpers[0].value.i.w & srcOpers[1].value.i.w));
       break;
     case OPCODE_OR:
-      s.SetDst(op.operands[0], op, ShaderVariable("", srcOpers[0].value.i.x | srcOpers[1].value.i.x,
-                                                  srcOpers[0].value.i.y | srcOpers[1].value.i.y,
-                                                  srcOpers[0].value.i.z | srcOpers[1].value.i.z,
-                                                  srcOpers[0].value.i.w | srcOpers[1].value.i.w));
+      s.SetDst(op.operands[0], op,
+               ShaderVariable("", srcOpers[0].value.i.x | srcOpers[1].value.i.x,
+                              srcOpers[0].value.i.y | srcOpers[1].value.i.y,
+                              srcOpers[0].value.i.z | srcOpers[1].value.i.z,
+                              srcOpers[0].value.i.w | srcOpers[1].value.i.w));
       break;
     case OPCODE_XOR:
-      s.SetDst(op.operands[0], op, ShaderVariable("", srcOpers[0].value.u.x ^ srcOpers[1].value.u.x,
-                                                  srcOpers[0].value.u.y ^ srcOpers[1].value.u.y,
-                                                  srcOpers[0].value.u.z ^ srcOpers[1].value.u.z,
-                                                  srcOpers[0].value.u.w ^ srcOpers[1].value.u.w));
+      s.SetDst(op.operands[0], op,
+               ShaderVariable("", srcOpers[0].value.u.x ^ srcOpers[1].value.u.x,
+                              srcOpers[0].value.u.y ^ srcOpers[1].value.u.y,
+                              srcOpers[0].value.u.z ^ srcOpers[1].value.u.z,
+                              srcOpers[0].value.u.w ^ srcOpers[1].value.u.w));
       break;
     case OPCODE_NOT:
-      s.SetDst(op.operands[0], op, ShaderVariable("", ~srcOpers[0].value.u.x, ~srcOpers[0].value.u.y,
-                                                  ~srcOpers[0].value.u.z, ~srcOpers[0].value.u.w));
+      s.SetDst(op.operands[0], op,
+               ShaderVariable("", ~srcOpers[0].value.u.x, ~srcOpers[0].value.u.y,
+                              ~srcOpers[0].value.u.z, ~srcOpers[0].value.u.w));
       break;
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    // transcendental functions with loose ULP requirements, so we pass them to the GPU to get
-    // more accurate (well, LESS accurate but more representative) answers.
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      // transcendental functions with loose ULP requirements, so we pass them to the GPU to get
+      // more accurate (well, LESS accurate but more representative) answers.
 
     case OPCODE_RCP:
     case OPCODE_RSQ:
@@ -2398,8 +2408,8 @@ State State::GetNext(GlobalState &global, DebugAPIWrapper *apiWrapper, State qua
       break;
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Misc
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      // Misc
 
     case OPCODE_NOP:
     case OPCODE_CUSTOMDATA:
@@ -2546,8 +2556,8 @@ State State::GetNext(GlobalState &global, DebugAPIWrapper *apiWrapper, State qua
       break;
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Comparison
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      // Comparison
 
     case OPCODE_EQ:
       s.SetDst(op.operands[0], op,
@@ -2672,8 +2682,8 @@ State State::GetNext(GlobalState &global, DebugAPIWrapper *apiWrapper, State qua
                               (srcOpers[0].value.u.w >= srcOpers[1].value.u.w ? ~0l : 0l)));
       break;
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Atomic instructions
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      // Atomic instructions
 
     case OPCODE_IMM_ATOMIC_ALLOC:
     {
@@ -3288,7 +3298,10 @@ State State::GetNext(GlobalState &global, DebugAPIWrapper *apiWrapper, State qua
           else if(sampleCount == 2)
           {
             static const float pattern_2x[] = {
-                _SMP(4.0f), _SMP(4.0f), _SMP(-4.0f), _SMP(-4.0f),
+                _SMP(4.0f),
+                _SMP(4.0f),
+                _SMP(-4.0f),
+                _SMP(-4.0f),
             };
 
             sample_pattern = &pattern_2x[0];
@@ -3745,8 +3758,8 @@ State State::GetNext(GlobalState &global, DebugAPIWrapper *apiWrapper, State qua
       break;
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Flow control
+      /////////////////////////////////////////////////////////////////////////////////////////////////////
+      // Flow control
 
     case OPCODE_SWITCH:
     {
@@ -4074,11 +4087,11 @@ void CreateShaderDebugStateAndTrace(ShaderDebug::State &initialState, ShaderDebu
 
       v.name = StringFormat::Fmt("v%d (%s)", sig.regIndex, sig.semanticIdxName.c_str());
       v.rows = 1;
-      v.columns = sig.regChannelMask & 0x8 ? 4 : sig.regChannelMask & 0x4
-                                                     ? 3
-                                                     : sig.regChannelMask & 0x2
-                                                           ? 2
-                                                           : sig.regChannelMask & 0x1 ? 1 : 0;
+      v.columns = sig.regChannelMask & 0x8
+                      ? 4
+                      : sig.regChannelMask & 0x4
+                            ? 3
+                            : sig.regChannelMask & 0x2 ? 2 : sig.regChannelMask & 0x1 ? 1 : 0;
 
       if(sig.compType == CompType::UInt)
         v.type = VarType::UInt;
@@ -4124,11 +4137,11 @@ void CreateShaderDebugStateAndTrace(ShaderDebug::State &initialState, ShaderDebu
 
       v.name = StringFormat::Fmt("o%d (%s)", sig.regIndex, sig.semanticIdxName.c_str());
       v.rows = 1;
-      v.columns = sig.regChannelMask & 0x8 ? 4 : sig.regChannelMask & 0x4
-                                                     ? 3
-                                                     : sig.regChannelMask & 0x2
-                                                           ? 2
-                                                           : sig.regChannelMask & 0x1 ? 1 : 0;
+      v.columns = sig.regChannelMask & 0x8
+                      ? 4
+                      : sig.regChannelMask & 0x4
+                            ? 3
+                            : sig.regChannelMask & 0x2 ? 2 : sig.regChannelMask & 0x1 ? 1 : 0;
 
       if(initialState.outputs[sig.regIndex].columns == 0)
         initialState.outputs[sig.regIndex] = v;
@@ -4167,11 +4180,11 @@ void CreateShaderDebugStateAndTrace(ShaderDebug::State &initialState, ShaderDebu
       }
 
       v.rows = 1;
-      v.columns = sig.regChannelMask & 0x8 ? 4 : sig.regChannelMask & 0x4
-                                                     ? 3
-                                                     : sig.regChannelMask & 0x2
-                                                           ? 2
-                                                           : sig.regChannelMask & 0x1 ? 1 : 0;
+      v.columns = sig.regChannelMask & 0x8
+                      ? 4
+                      : sig.regChannelMask & 0x4
+                            ? 3
+                            : sig.regChannelMask & 0x2 ? 2 : sig.regChannelMask & 0x1 ? 1 : 0;
 
       initialState.outputs[outIdx++] = v;
     }
@@ -4828,11 +4841,11 @@ void GatherPSInputDataForInitialValues(const DXBC::Reflection &psDxbc,
 
     psInputDefinition += ";\n";
 
-    int firstElem = sig.regChannelMask & 0x1 ? 0 : sig.regChannelMask & 0x2
-                                                       ? 1
-                                                       : sig.regChannelMask & 0x4
-                                                             ? 2
-                                                             : sig.regChannelMask & 0x8 ? 3 : -1;
+    int firstElem = sig.regChannelMask & 0x1
+                        ? 0
+                        : sig.regChannelMask & 0x2
+                              ? 1
+                              : sig.regChannelMask & 0x4 ? 2 : sig.regChannelMask & 0x8 ? 3 : -1;
 
     // arrays get added all at once (because in the struct data, they are contiguous even if
     // in the input signature they're not).
