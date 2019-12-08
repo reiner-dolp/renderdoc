@@ -1503,8 +1503,6 @@ bool ReplayController::SaveTexture(const TextureSave &saveData, const char *path
 
         int pixTypes[4] = {TINYEXR_PIXELTYPE_FLOAT, TINYEXR_PIXELTYPE_FLOAT,
                            TINYEXR_PIXELTYPE_FLOAT, TINYEXR_PIXELTYPE_FLOAT};
-        int reqTypes[4] = {TINYEXR_PIXELTYPE_HALF, TINYEXR_PIXELTYPE_HALF, TINYEXR_PIXELTYPE_HALF,
-                           TINYEXR_PIXELTYPE_HALF};
 
         // must be in this order as many viewers don't pay attention to channels and just assume
         // they are in this order
@@ -1518,7 +1516,20 @@ bool ReplayController::SaveTexture(const TextureSave &saveData, const char *path
         exrImage.width = td.width;
         exrImage.height = td.height;
         exrHeader.pixel_types = pixTypes;
-        exrHeader.requested_pixel_types = reqTypes;
+
+        if(saveFmt.compByteWidth == 4)
+        {
+          int reqTypes[4] = {TINYEXR_PIXELTYPE_FLOAT, TINYEXR_PIXELTYPE_FLOAT,
+                             TINYEXR_PIXELTYPE_FLOAT, TINYEXR_PIXELTYPE_FLOAT};
+          exrHeader.requested_pixel_types = reqTypes;
+        }
+        else
+        {
+          int reqTypes[4] = {TINYEXR_PIXELTYPE_HALF, TINYEXR_PIXELTYPE_HALF, TINYEXR_PIXELTYPE_HALF,
+                             TINYEXR_PIXELTYPE_HALF};
+          exrHeader.requested_pixel_types = reqTypes;
+        }
+        
 
         unsigned char *mem = NULL;
 
