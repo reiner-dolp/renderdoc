@@ -1769,7 +1769,7 @@ VkBool32 VKAPI_PTR UserDebugUtilsCallback(VkDebugUtilsMessageSeverityFlagBitsEXT
       VkDebugUtilsMessengerCallbackDataEXT data = {};
 
       data.messageIdNumber = 1;
-      data.pMessageIdName = NULL;
+      data.pMessageIdName = "UNASSIGNED-RenderDoc-DebugOutputNotice";
       data.pMessage =
           "While debugging through RenderDoc, debug output through validation layers is "
           "suppressed.\n"
